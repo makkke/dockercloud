@@ -37,7 +37,6 @@ class DockerCloud {
     })
 
     this.ws.on('open', () => {
-      console.log('Connected using WebSockets')
       this.onConnected()
     })
   }

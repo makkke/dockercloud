@@ -1,15 +1,21 @@
 {
   "name": "dockercloud",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Node.js library for Docker Cloud API",
-  "main": "index.js",
+  "main": "lib/dockercloud.js",
   "scripts": {
-    "start": "babel-node index.js --presets=es2015,stage-0 | ./node_modules/.bin/bunyan"
+    "compile": "babel --presets es2015,stage-0 -d lib/ src/",
+    "test": "npm run compile && mocha --compilers js:babel-core/register",
+    "prepublish": "npm run compile"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CityofSurrey/dockercloud.git"
   },
+  "keywords": [
+    "docker",
+    "dockercloud"
+  ],
   "author": "Viatcheslav Ivanov (viatcheslav.ivanov@surrey.ca)",
   "license": "ISC",
   "bugs": {
@@ -26,9 +32,11 @@
     "babel-preset-es2015": "^6.6.0",
     "babel-preset-stage-0": "^6.5.0",
     "babel-register": "^6.7.2",
+    "chai": "^3.5.0",
     "eslint": "^2.8.0",
     "eslint-config-airbnb": "^7.0.0",
     "eslint-plugin-jsx-a11y": "^0.6.2",
-    "eslint-plugin-react": "^5.0.1"
+    "eslint-plugin-react": "^5.0.1",
+    "mocha": "^2.4.5"
   }
 }
