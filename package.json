@@ -1,11 +1,12 @@
 {
   "name": "dockercloud",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.js library for Docker Cloud API",
   "main": "lib/dockercloud.js",
   "scripts": {
     "compile": "babel --presets es2015,stage-0 -d lib/ src/",
-    "test": "npm run compile && mocha --compilers js:babel-core/register",
+    "test": "babel-node ./node_modules/.bin/isparta cover _mocha",
+    "test:report": "mocha --compilers js:babel-core/register --reporter mocha-junit-reporter",
     "prepublish": "npm run compile"
   },
   "repository": {
@@ -37,6 +38,9 @@
     "eslint-config-airbnb": "^7.0.0",
     "eslint-plugin-jsx-a11y": "^0.6.2",
     "eslint-plugin-react": "^5.0.1",
-    "mocha": "^2.4.5"
+    "isparta": "^4.0.0",
+    "istanbul": "^0.4.3",
+    "mocha": "^2.4.5",
+    "mocha-junit-reporter": "^1.11.1"
   }
 }

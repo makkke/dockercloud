@@ -34,3 +34,4 @@ node_modules
 
 project.sublime-workspace
 lib
+test-results.xml
