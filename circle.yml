@@ -1,0 +1,19 @@
+machine:
+  node:
+    version: 5.7.0
+
+dependencies:
+  override:
+    - npm install -g codeclimate-test-reporter
+    - npm run compile
+
+test:
+  override:
+    - npm test
+
+deployment:
+  npm:
+    branch: master
+    commands:
+      - codeclimate-test-reporter < ./coverage/lcov.info
+      - npm publish
