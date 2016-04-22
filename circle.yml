@@ -1,0 +1,21 @@
+machine:
+  node:
+    version: 5.7.0
+
+dependencies:
+  override:
+    - npm install
+    - npm run compile
+
+test:
+  override:
+    - npm test
+    - MOCHA_FILE=$CIRCLE_TEST_REPORTS/report.xml npm run test:report
+
+deployment:
+  npm:
+    branch: master
+    commands:
+      - npm install -g codeclimate-test-reporter
+      - codeclimate-test-reporter < ./coverage/lcov.info
+      - npm publish
