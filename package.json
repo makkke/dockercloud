@@ -1,6 +1,6 @@
 {
   "name": "dockercloud",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Node.js library for Docker Cloud API",
   "main": "lib/dockercloud.js",
   "scripts": {
