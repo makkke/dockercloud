@@ -58,6 +58,12 @@ class DockerCloud {
 
   services = {
     findById: this.findServiceById.bind(this),
+    findByName: this.findServiceByName.bind(this),
+    create: this.createService.bind(this),
+    remove: this.removeService.bind(this),
+
+    start: this.startService.bind(this),
+    redeploy: this.redeployService.bind(this),
 
     getContainers: this.getServiceContainers.bind(this),
   }
@@ -212,6 +218,82 @@ class DockerCloud {
         if (response.statusCode >= 300) return reject(body)
 
         return resolve(JSON.parse(body))
+      })
+    })
+  }
+
+  findServiceByName(name) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.get(`/service?name=${name}`, (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const services = JSON.parse(body).objects
+        const service = services.find(x => x.state !== STATES.TERMINATED)
+
+        return resolve(service)
+      })
+    })
+  }
+
+  createService(props) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.post({
+        url: '/service/',
+        body: JSON.stringify(props),
+      }, (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const service = JSON.parse(body)
+
+        return resolve(service)
+      })
+    })
+  }
+
+  removeService(service) {
+    return new Promise((resolve, reject) => {
+      if (service.state === STATES.TERMINATED) {
+        resolve()
+      } else {
+        this.appRequest.del(`/service/${service.uuid}/`, async (error, response, body) => {
+          if (error) return reject(error)
+          if (response.statusCode >= 300) return reject(body)
+
+          const actionId = this.extractUuid(response.headers['x-dockercloud-action-uri'])
+          const action = await this.findActionById(actionId)
+
+          return resolve(action)
+        })
+      }
+    })
+  }
+
+  startService(service) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.post(`/service/${service.uuid}/start/`, async (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const actionId = this.extractUuid(response.headers['x-dockercloud-action-uri'])
+        const action = await this.findActionById(actionId)
+
+        return resolve(action)
+      })
+    })
+  }
+
+  redeployService(service) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.post(`/service/${service.uuid}/redeploy/`, async (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const actionId = this.extractUuid(response.headers['x-dockercloud-action-uri'])
+        const action = await this.findActionById(actionId)
+
+        return resolve(action)
       })
     })
   }
