@@ -4,6 +4,7 @@
   "description": "Node.js library for Docker Cloud API",
   "main": "lib/dockercloud.js",
   "scripts": {
+    "dev": "babel-node ./test/playground.js --presets=es2015,stage-0",
     "compile": "babel --presets es2015,stage-0 -d lib/ src/",
     "test": "babel-node ./node_modules/.bin/isparta cover _mocha",
     "test:report": "mocha --compilers js:babel-core/register --reporter mocha-junit-reporter",
