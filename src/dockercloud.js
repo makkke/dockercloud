@@ -16,25 +16,24 @@ const EVENT_TYPES = {
 }
 
 class DockerCloud {
-  constructor(username, password) {
+  constructor(apiKey) {
     this.credentials = {
-      username,
-      password,
+      apiKey,
     }
 
     this.appRequest = request.defaults({
       baseUrl: 'https://cloud.docker.com/api/app/v1',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Basic ${apiKey}`,
       },
-      auth: { username, password },
     })
     this.auditRequest = request.defaults({
       baseUrl: 'https://cloud.docker.com/api/audit/v1',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Basic ${apiKey}`,
       },
-      auth: { username, password },
     })
   }
 
@@ -79,9 +78,9 @@ class DockerCloud {
 
   connect() {
     return new Promise((resolve) => {
-      const { username, password } = this.credentials
+      const { apiKey } = this.credentials
       this.ws = new WebSocket('wss://ws.cloud.docker.com/api/audit/v1/events/', null, {
-        headers: { Authorization: `Basic ${new Buffer(`${username}:${password}`).toString('base64')}` },
+        headers: { Authorization: `Basic ${apiKey}` },
       })
 
       this.ws.on('open', () => resolve())
