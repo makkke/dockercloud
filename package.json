@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/CityofSurrey/dockercloud#readme",
   "dependencies": {
+    "babel-polyfill": "^6.9.1",
     "request": "^2.71.0",
     "ws": "^1.1.0"
   },
