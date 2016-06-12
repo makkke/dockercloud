@@ -1,6 +1,9 @@
-import 'babel-polyfill'
 import request from 'request'
 import WebSocket from 'ws'
+
+if (!global._babelPolyfill) {
+  require('babel-polyfill')
+}
 
 const STATES = {
   SUCCESS: 'Success',
