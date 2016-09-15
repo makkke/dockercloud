@@ -229,7 +229,7 @@ Get the containers connected to a service; the parameter is the service object.
 
 ```js
 const service = await dockerCloud.findServiceById('uuid')
-const containers = dockerCloud.getStackServices(service)
+const containers = dockerCloud.getServiceContainers(service)
 ```
 
 #### findContainerById
