@@ -232,6 +232,28 @@ const service = await dockerCloud.findServiceById('uuid')
 const containers = dockerCloud.getServiceContainers(service)
 ```
 
+
+#### waitUntilServiceIsStopped
+
+Wait until a service is stopped
+
+```js
+await dockerCloud.connect()
+const service = await dockerCloud.findServiceById('serviceId')
+await dockerCloud.waitUntilServiceIsStopped(service)
+```
+
+#### waitUntilServiceIsRunning
+
+Wait until a service is running
+
+```js
+await dockerCloud.connect()
+const service = await dockerCloud.findServiceById('serviceId')
+await dockerCloud.waitUntilServiceIsRunning(service)
+```
+
+
 #### findContainerById
 
 The value returned by the promise will be the container with the id passed.

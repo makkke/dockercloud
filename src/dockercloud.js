@@ -27,6 +27,7 @@ class DockerCloud {
       username,
       password,
     }
+    this.checkInterval = 5000
 
     this.appRequest = request.defaults({
       baseUrl: 'https://cloud.docker.com/api/app/v1',
@@ -118,7 +119,6 @@ class DockerCloud {
   subscribe({ type, state, resourceUri }) {
     return new Promise((resolve) => {
       const subscribeFunction = (message) => {
-
         if (message.type === type &&
           message.state === state &&
           message.resource_uri.includes(resourceUri)) {
@@ -233,11 +233,16 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (stack.state === STATES.TERMINATED) return resolve()
 
-      return this.subscribe({
-        type: EVENT_TYPES.STACK,
-        state: STATES.TERMINATED,
-        resourceUri: stack.uuid,
-      }).then(resolve)
+      return Promise.race([
+        this.subscribe({
+          type: EVENT_TYPES.STACK,
+          state: STATES.TERMINATED,
+          resourceUri: stack.uuid,
+        }),
+        this.checkPeriodically('findStackById', stack.uuid, {
+          state: STATES.TERMINATED,
+        }, this.checkInterval),
+      ]).then(resolve)
     })
   }
 
@@ -245,11 +250,16 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (stack.state === STATES.RUNNING) return resolve()
 
-      return this.subscribe({
-        type: EVENT_TYPES.STACK,
-        state: STATES.RUNNING,
-        resourceUri: stack.uuid,
-      }).then(resolve)
+      return Promise.race([
+        this.subscribe({
+          type: EVENT_TYPES.STACK,
+          state: STATES.RUNNING,
+          resourceUri: stack.uuid,
+        }),
+        this.checkPeriodically('findStackById', stack.uuid, {
+          state: STATES.RUNNING,
+        }, this.checkInterval),
+      ]).then(resolve)
     })
   }
 
@@ -328,6 +338,37 @@ class DockerCloud {
     })
   }
 
+  stopService(service) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.post(`/service/${service.uuid}/stop/`, async (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const actionId = this.extractUuid(response.headers['x-dockercloud-action-uri'])
+        const action = await this.findActionById(actionId)
+
+        return resolve(action)
+      })
+    })
+  }
+
+  updateService(service, props) {
+    return new Promise((resolve, reject) => {
+      this.appRequest.patch({
+        url: `/service/${service.uuid}/`,
+        body: JSON.stringify(props),
+      }, async (error, response, body) => {
+        if (error) return reject(error)
+        if (response.statusCode >= 300) return reject(body)
+
+        const actionId = this.extractUuid(response.headers['x-dockercloud-action-uri'])
+        const action = await this.findActionById(actionId)
+
+        return resolve(action)
+      })
+    })
+  }
+
   redeployService(service) {
     return new Promise((resolve, reject) => {
       this.appRequest.post(`/service/${service.uuid}/redeploy/`, async (error, response, body) => {
@@ -339,6 +380,44 @@ class DockerCloud {
 
         return resolve(action)
       })
+    })
+  }
+
+  waitUntilServiceIsStopped(service) {
+    return new Promise((resolve) => {
+      if (service.state === STATES.STOPPED) return resolve()
+
+      return Promise.race([
+        // Subscribe to the websocket to get warned when the service is stopped
+        this.subscribe({
+          type: EVENT_TYPES.CONTAINER,
+          state: STATES.STOPPED,
+          resourceUri: service.uuid,
+        }),
+        // Sometimes the websocket miss some message, check periodically if the service is stopped
+        this.checkPeriodically('findServiceById', service.uuid, {
+          state: STATES.STOPPED,
+        }, this.checkInterval),
+      ]).then(resolve)
+    })
+  }
+
+  waitUntilServiceIsRunning(service) {
+    return new Promise((resolve) => {
+      if (service.state === STATES.RUNNING) return resolve()
+
+      return Promise.race([
+        // Subscribe to the websocket to get warned when the service is stopped
+        this.subscribe({
+          type: EVENT_TYPES.CONTAINER,
+          state: STATES.RUNNING,
+          resourceUri: service.uuid,
+        }),
+        // Sometimes the websocket miss some message, check periodically if the service is stopped
+        this.checkPeriodically('findServiceById', service.uuid, {
+          state: STATES.RUNNING,
+        }, this.checkInterval),
+      ]).then(resolve)
     })
   }
 
@@ -366,15 +445,44 @@ class DockerCloud {
     })
   }
 
+  checkPeriodically(action, uuid, until, interval) {
+    return new Promise((resolve) => {
+      const checkStatus = async () => {
+        const currentStatus = await this[action](uuid)
+        let waitedStatus = true
+        for (const key in until) {
+          if (until.hasOwnProperty(key)) {
+            if (!currentStatus.hasOwnProperty(key) || currentStatus[key] !== until[key]) {
+              waitedStatus = false
+              break
+            }
+          }
+        }
+        if (waitedStatus) {
+          return resolve()
+        }
+        return setTimeout(checkStatus, interval)
+      }
+      checkStatus()
+    })
+  }
+
   waitUntilContainerIsStopped(container) {
     return new Promise((resolve) => {
       if (container.state === STATES.STOPPED) return resolve()
 
-      return this.subscribe({
-        type: EVENT_TYPES.CONTAINER,
-        state: STATES.STOPPED,
-        resourceUri: container.uuid,
-      }).then(resolve)
+      return Promise.race([
+        // Subscribe to the websocket to get warned when the container is stopped
+        this.subscribe({
+          type: EVENT_TYPES.CONTAINER,
+          state: STATES.STOPPED,
+          resourceUri: container.uuid,
+        }),
+        // Sometimes the websocket miss some message, check periodically if the container is stopped
+        this.checkPeriodically('findContainerById', container.uuid, {
+          state: STATES.STOPPED,
+        }, 5000),
+      ]).then(resolve)
     })
   }
 
@@ -395,11 +503,16 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (action.state === STATES.SUCCESS) return resolve()
 
-      return this.subscribe({
-        type: EVENT_TYPES.ACTION,
-        state: STATES.SUCCESS,
-        resourceUri: action.uuid,
-      }).then(resolve)
+      return Promise.race([
+        this.subscribe({
+          type: EVENT_TYPES.ACTION,
+          state: STATES.SUCCESS,
+          resourceUri: action.uuid,
+        }),
+        this.checkPeriodically('findActionById', action.uuid, {
+          state: STATES.SUCCESS,
+        }, this.checkInterval),
+      ]).then(resolve)
     })
   }
 
