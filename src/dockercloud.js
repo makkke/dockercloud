@@ -19,6 +19,8 @@ const EVENT_TYPES = {
   ACTION: 'action',
 }
 
+const DockerCloudSubscribers = new WeakMap()
+
 class DockerCloud {
   constructor(username, password) {
     this.credentials = {
@@ -40,6 +42,7 @@ class DockerCloud {
       },
       auth: { username, password },
     })
+    DockerCloudSubscribers.set(this, [])
   }
 
   stacks = {
@@ -89,6 +92,41 @@ class DockerCloud {
       })
 
       this.ws.on('open', () => resolve())
+
+      this.ws.on('message', (data) => {
+        const message = JSON.parse(data)
+        const subscribers = DockerCloudSubscribers.get(this)
+        for (const subscriber of subscribers) {
+          subscriber(message)
+        }
+      })
+    })
+  }
+
+  subscribeToAllMessages(func) {
+    DockerCloudSubscribers.get(this).push(func)
+  }
+
+  unSubscribeFromAllMessages(func) {
+    const subscribers = DockerCloudSubscribers.get(this)
+    const index = subscribers.indexOf(func)
+    if (~index) {
+      subscribers.splice(index, 1)
+    }
+  }
+
+  subscribe({ type, state, resourceUri }) {
+    return new Promise((resolve) => {
+      const subscribeFunction = (message) => {
+
+        if (message.type === type &&
+          message.state === state &&
+          message.resource_uri.includes(resourceUri)) {
+          this.unSubscribeFromAllMessages(subscribeFunction)
+          resolve()
+        }
+      }
+      this.subscribeToAllMessages(subscribeFunction)
     })
   }
 
@@ -195,14 +233,11 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (stack.state === STATES.TERMINATED) return resolve()
 
-      this.ws.on('message', (data) => {
-        const message = JSON.parse(data)
-        if (message.type === EVENT_TYPES.STACK &&
-            message.state === STATES.TERMINATED &&
-            message.resource_uri.includes(stack.uuid)) {
-          resolve()
-        }
-      })
+      return this.subscribe({
+        type: EVENT_TYPES.STACK,
+        state: STATES.TERMINATED,
+        resourceUri: stack.uuid,
+      }).then(resolve)
     })
   }
 
@@ -210,14 +245,11 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (stack.state === STATES.RUNNING) return resolve()
 
-      this.ws.on('message', (data) => {
-        const message = JSON.parse(data)
-        if (message.type === EVENT_TYPES.STACK &&
-            message.state === STATES.RUNNING &&
-            message.resource_uri.includes(stack.uuid)) {
-          resolve()
-        }
-      })
+      return this.subscribe({
+        type: EVENT_TYPES.STACK,
+        state: STATES.RUNNING,
+        resourceUri: stack.uuid,
+      }).then(resolve)
     })
   }
 
@@ -338,14 +370,11 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (container.state === STATES.STOPPED) return resolve()
 
-      this.ws.on('message', (data) => {
-        const message = JSON.parse(data)
-        if (message.type === EVENT_TYPES.CONTAINER &&
-            message.state === STATES.STOPPED &&
-            message.resource_uri.includes(container.uuid)) {
-          resolve()
-        }
-      })
+      return this.subscribe({
+        type: EVENT_TYPES.CONTAINER,
+        state: STATES.STOPPED,
+        resourceUri: container.uuid,
+      }).then(resolve)
     })
   }
 
@@ -366,14 +395,11 @@ class DockerCloud {
     return new Promise((resolve) => {
       if (action.state === STATES.SUCCESS) return resolve()
 
-      this.ws.on('message', (data) => {
-        const message = JSON.parse(data)
-        if (message.type === EVENT_TYPES.ACTION &&
-            message.state === STATES.SUCCESS &&
-            message.resource_uri.includes(action.uuid)) {
-          resolve()
-        }
-      })
+      return this.subscribe({
+        type: EVENT_TYPES.ACTION,
+        state: STATES.SUCCESS,
+        resourceUri: action.uuid,
+      }).then(resolve)
     })
   }
 

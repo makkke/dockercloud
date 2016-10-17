@@ -36,3 +36,6 @@ project.sublime-workspace
 lib
 test-results.xml
 playground.js
+
+# Ides
+.idea
