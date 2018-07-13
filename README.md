@@ -4,7 +4,7 @@
 <a href="https://codeclimate.com/github/CityofSurrey/dockercloud"><img src="https://codeclimate.com/github/CityofSurrey/dockercloud/badges/gpa.svg" /></a>
 <a href="https://codeclimate.com/github/CityofSurrey/dockercloud/coverage"><img src="https://codeclimate.com/github/CityofSurrey/dockercloud/badges/coverage.svg" /></a>
 
-Node.js library for Docker Cloud API
+Dockercloud is a Node.js library for Docker Cloud API.
 
 ## Installation
 
