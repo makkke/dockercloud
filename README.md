@@ -16,7 +16,7 @@ npm install dockercloud
 
 ### Initilization
 
-To use this class firstly you need to instantiate a new instance:
+You need to instantiate a new instance to use this class:
 ```js
 import DockerCloud from 'dockercloud'
 
