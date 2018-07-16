@@ -42,8 +42,7 @@ await dockerCloud.waitUntilStackIsTerminated(stack)
 
 #### disconnect
 
-Disconnect from DockerCloud.
-This method returns nothing.
+This method disconnects the application from DockerCloud without any returned response.
 
 #### queryStacks
 
