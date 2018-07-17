@@ -29,8 +29,8 @@ All methods return promises.
 
 #### connect
 
-Connect to DockerCloud and listen for events.
-This method is required to be called before using the waitUntil* methods.
+This method connects the application to DockerCloud and listen for events.
+You must call this method before using the waitUntil* methods.
 
 Example:
 ```js
